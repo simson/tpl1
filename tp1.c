@@ -1,15 +1,20 @@
+/**
+ * @file   tp1.c
+ * @author Siméon Marijon <simson@laptop-de-sim>
+ * @date   Mon Feb  7 12:20:31 2011
+ * 
+ * @brief  TP en temps libre n°1
+ * 
+ * 
+ */
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
-// Fonctions de manipulation de matrices pleines
-
-// definition de constantes globales
-/**
- * @def L Largeur de la matrice pleine
- */
-#define L 7			/**< Longueur de la patrice pleine */
+#define L 7  /**< Longueur de la patrice pleine */
 #define H 4  /**<  Hauteur de la matrice pleine */
+
 
 
 
@@ -19,6 +24,7 @@
  * @brief initialise une matrice pleine avec des entiers aleatoires
  * @param pleine Matrice pleine à initialiser 
  */
+
 void init_pleine(int pleine[H][L])
 {
     // initialisation du generateur de nombres aleatoires
@@ -28,7 +34,6 @@ void init_pleine(int pleine[H][L])
             // une facon de garantir qu'il y aura beaucoup de 0
             pleine[l][c] = (rand() % 19) - 9;
 	    if (pleine[l][c] % 2 == 0) pleine[l][c] = 0;
-	    //pleine[l][c] =  ; //l+c;
         }
     }
 }
@@ -63,6 +68,14 @@ void affiche_pleine(int pleine[H][L])
 }
 
 
+void mult_pleine(int pleine[H][L], int fac)
+{
+    for (unsigned l = 0; l < H; l++) {                        // parcours sur les lignes
+        for (unsigned c = 0; c < L; c++) {                    // parcours sur les colones
+           pleine[l][c] = pleine[l][c] * fac ;   // on affiche chaque case de la matrice pleine
+        }
+    }
+}
 
 /**
  * @struct cell_t
@@ -79,7 +92,7 @@ typedef struct cell_t {
  * @struct creuse_t
  * @brief le type matrice creuse
  */
-typedef struct creuse_t {
+typedef struct{
     unsigned nbr_lig;                   /**< le nombre de lignes de la matrice */
     struct cell_t **lignes;                            /**< tableau des lignes */
     unsigned nbr_col;                   /**< le nombre de lignes de la matrice */
@@ -94,10 +107,13 @@ creuse_t* init_creuse()
 {
     
     creuse_t* creuse = malloc(sizeof(creuse_t)); // allocation de la structure
+    assert(creuse != NULL);                      //Vérification du malloc
     creuse->nbr_lig = H;                         // initialisation des nombres
     creuse->nbr_col = L;                         // de lignes et de colonnes
     creuse->lignes = calloc(creuse->nbr_lig, sizeof(cell_t*)); //allocation des tableau de listes
+    assert(creuse->lignes != NULL);              // Vérification du malloc
     creuse->colonnes = calloc(creuse->nbr_col, sizeof(cell_t*)); 
+    assert(creuse->colonnes != NULL);            // Vérification du malloc
     return creuse;                               // retourne la matrice initialisé
 }
 
@@ -136,10 +152,10 @@ void liberer_creuse(creuse_t* creuse)
  */
 void affiche_creuse(creuse_t* creuse) 
 {
-    cell_t* tmp;                               // Allocation d'un pointeur temporaire
+    cell_t* tmp;                               // Déclaration d'un pointeur temporaire sur une cellule, en fait une liste
     for (unsigned l = 0; l < H; l++)           // On parcours le tableau des listes de lignes
     {
-      tmp = creuse->lignes[l]; 
+	tmp = creuse->lignes[l];               // Tmp devient la liste lignes[l]  
       for (unsigned c = 0; c < L; c++)         // On parcours les colones 
       {                                        // le vrai parcours se fait sur la liste tmp
 	  if (tmp == NULL || tmp->lig !=l || tmp->col !=c) 
@@ -159,17 +175,41 @@ void affiche_creuse(creuse_t* creuse)
 }
 
 /** 
+ * Multiplication de matrice creuse 
+ * @param creuse la matrice à multiplié
+ * @param fac le facteur
+ */
+void mult_creuse(creuse_t* creuse, int fac) 
+{
+    cell_t* tmp;                               // Déclaration d'une liste temporaire
+    for (unsigned l = 0; l < H; l++)           // On parcours le tableau des listes de lignes
+    {
+      tmp = creuse->lignes[l]; 
+      
+      for (unsigned c = 0; c < L; c++)         // On parcours les colones
+      {                                        // le vrai parcours se fait sur la liste tmp
+	  if (! (tmp == NULL || tmp->lig !=l || tmp->col !=c)) 
+	  {                                    // Si on a atteint la fin de la liste ou
+	                                       // si la cellule en tête de liste ne correspond pas à l'indice courant
+	      tmp->val = tmp->val * fac;       // On multiplie la valeur de la cellulle
+	      tmp = tmp->suiv_col;             // On avance dans la liste
+	  }
+      }
+    }
+}
+
+/** 
  * @brief Fonction d'ajout en queue dans une liste
  * @param liste_cell Pointeur sur la tête de liste ou l'on doit inserer la nouvelle cellule  
  * @param p_cell Pointeur sur la cellule à ajouter en fin de la fin
  * @param col Booléen permettant de selectionné le type de liste (ligne ou colonne)
  */
 void ajouteenqueue(cell_t* liste_cell, cell_t* p_cell, short col)
-{
-    cell_t* tmp = liste_cell;                 // on créer une copie du pointeur sur la tête de la liste
+{ 
+   cell_t* tmp = liste_cell;                 // on créer une copie du pointeur sur la tête de la liste
     if (col)                                  // Disjonction des cas si on travaille sur une liste de colonnes ou de lignes
 	{
-	    while (tmp->suiv_col != NULL)     // On parcours la liste des colonnes
+	    while (tmp->suiv_col != NULL)     // On parcours  la liste des colonnes jusqu'au dernier element
 	    {
 		tmp = tmp->suiv_col;
 	    }
@@ -177,11 +217,11 @@ void ajouteenqueue(cell_t* liste_cell, cell_t* p_cell, short col)
 	}
 	else
 	{
-	    while (tmp->suiv_lig != NULL)     // On parcours la liste des colonnes
+	    while (tmp->suiv_lig != NULL)     // On parcours la liste des lignes jusqu'au dernier element
 	    {
 		tmp = tmp->suiv_lig;
 	    }
-	    tmp->suiv_lig = p_cell;          // On ajoute en fin
+	    tmp->suiv_lig = p_cell;          // On ajoute en fin de la liste
 	}
 }
 /** 
@@ -191,20 +231,22 @@ void ajouteenqueue(cell_t* liste_cell, cell_t* p_cell, short col)
  */
 void creuse_vers_pleine(int pleine[H][L], creuse_t* creuse) 
 {
-    cell_t* tmp;
-    for (unsigned l = 0; l < H; l++)
+    cell_t* tmp;                                            // Déclaration d'une liste temporaire
+    for (unsigned l = 0; l < H; l++)                        // On parcours le tableau ligne 
     {
-      tmp = creuse->lignes[l]; 
+	tmp = creuse->lignes[l];                            // Allocation de la liste temporaire
       for (unsigned c = 0; c < L; c++) 
       {
 	  if (tmp == NULL || tmp->lig !=l || tmp->col !=c) 
-	  {
-	      pleine[l][c] = 0;	      
+	  {                                                // Si on a atteint la fin de la liste ou si
+                                                           // la cellule pointé ne correspond pas à l'indice courant
+	      pleine[l][c] = 0;	                           // On insert 0 dans la matrice pleine à l'indice courant
 	  }
-	  else
+	  else                                             // Sinon
 	  {
-	      pleine[l][c] = tmp->val;
-	      tmp = tmp->suiv_col;	      
+	      pleine[l][c] = tmp->val;                     // On stocke la valeur de la cellulle dans la matrice pleine
+	                                                   // à l'indice courant
+	      tmp = tmp->suiv_col;	                   // et on avance dans la liste
 	  }
 	  
       }
@@ -218,26 +260,27 @@ void pleine_vers_creuse(int pleine[H][L], creuse_t* creuse)
 {
     for (unsigned l = 0; l < H; l++) 
     {   
-	for (unsigned c = 0; c < L; c++) 
+	for (unsigned c = 0; c < L; c++) // On parcours toute la matrice pleine
 	{
 
-            if (pleine[l][c] != 0)
+            if (pleine[l][c] != 0)       // Si la valeur de la case est différente de 0
 	    {
-		cell_t* p_cell = malloc(sizeof(cell_t));
-		p_cell->val = pleine[l][c];
-		p_cell->suiv_col = NULL;
-		p_cell->suiv_lig = NULL;
-		p_cell->lig = l;
+		cell_t* p_cell = malloc(sizeof(cell_t)); // allocation d'une nouvelle cellule 
+		assert(p_cell != NULL);                  //Vérification du malloc
+		p_cell->val = pleine[l][c];              // Stockage de la valeur dans la celulle
+		p_cell->suiv_col = NULL;                 // Cette cellulle sera (temporairement) en fin des deux listes
+		p_cell->suiv_lig = NULL;                 // auxquelles elle appartient
+		p_cell->lig = l;                         // Stockage de la position réelle de la cellule
 		p_cell->col = c;
-		if (creuse->colonnes[c] == NULL)
+		if (creuse->colonnes[c] == NULL)         // Vérification que la liste colonnes[c] n'est pas vide
 		{
-		    creuse->colonnes[c] = p_cell;
+		    creuse->colonnes[c] = p_cell;        // Si oui on la place en tête
 		}
 		else
 		{
-		    ajouteenqueue(creuse->colonnes[c],p_cell,0);   
+		    ajouteenqueue(creuse->colonnes[c],p_cell,0); //sinon en queue   
 		}
-		if (creuse->lignes[l] == NULL)
+		if (creuse->lignes[l] == NULL)          //Idem pour la liste ligne[l]
 		{
 		    creuse->lignes[l] = p_cell;
 		}
@@ -256,35 +299,68 @@ void pleine_vers_creuse(int pleine[H][L], creuse_t* creuse)
  */
 int main(void)
 {
-    int pleine[H][L];
-    init_pleine(pleine);
-    affiche_pleine(pleine);
-    creuse_t* creuse = init_creuse();
-    pleine_vers_creuse(pleine, creuse);
-    affiche_creuse(creuse);
-    creuse_vers_pleine(pleine,creuse);
-    affiche_pleine(pleine);
-    liberer_creuse(creuse);
+    int pleine[H][L];                        // Déclaration de la matrice pleine
+    int pleine2[H][L];                       // Déclaration d'une deuxième matrice pleine
+    init_pleine(pleine);                     // remplissage de la matrice pleine
+    printf("Matrice pleine \n\n");
+    affiche_pleine(pleine);                  // affichage de la matrice pleine
+    creuse_t* creuse = init_creuse();        // Déclaration, allocation et initialisation de la matrice creuse
+    pleine_vers_creuse(pleine, creuse);      // Conversion de la matrice pleine en creuse
+    printf("Conversion de la matrice pleine en creuse \n\n");
+    affiche_creuse(creuse);                  // Affichage de la matrice creuse
+    creuse_vers_pleine(pleine2,creuse);      // Reconversion de la matrice dans une autre pleine 
+    printf("Conversion de la matrice creuse en pleine \n\n");
+    affiche_pleine(pleine2);                 // Affichage de la matrice pleine généré par la conversion (pour validation)
+    mult_creuse(creuse, 4);                  // Multiplication de la matrice creuse par 4
+    printf("Multiplication de la matrice creuse par 4 \n\n");
+    affiche_creuse(creuse);                  // affichage de la matrice creuse multiplié
+    creuse_vers_pleine(pleine,creuse);       // Conversion de la matrice
+    printf("Conversion de la matrice pleine en creuse multiplié \n\n");
+    affiche_pleine(pleine);                  // Affichage du résultat
+    printf("Multiplication de la matrice pleine par 4 \n\n");
+    mult_pleine(pleine2, 4);                  // Multiplication de la matrice pleine par 4
+    affiche_pleine(pleine2);                 // Affichage de la matrice pleine multiplié (pour validation)
+    liberer_creuse(creuse);                  // Libération de la matrice creuse 
 //zero
-
+    printf("\n\n Nouvelle Matrice \n\n");
+    // Test avec la matrice nulle
     init_pleine_constante(pleine,0);
-    affiche_pleine(pleine);
-    creuse = init_creuse();
-    pleine_vers_creuse(pleine, creuse);
-    affiche_creuse(creuse);
-    creuse_vers_pleine(pleine,creuse);
-    affiche_pleine(pleine);
-    liberer_creuse(creuse);
+    printf("Matrice pleine \n\n");         
+    affiche_pleine(pleine);                  // Affichage de la matrice pleine 
+    creuse = init_creuse();                  // Initialisation de la matrice creuse
+    pleine_vers_creuse(pleine, creuse);      // Conversion vers creuse
+    printf("Conversion de la matrice pleine en creuse \n\n");
+    affiche_creuse(creuse);                  // Affichage du résultat
+    mult_creuse(creuse, 4);                  // Multiplication de la matrice creuse
+    printf("Multiplication de la matrice creuse par 4 \n\n");
+    affiche_creuse(creuse);                  // Affichage du résultat
+    mult_pleine(pleine,4);                     // Multiplication de la matrice pleine
+    printf("Multiplication de la matrice pleine par 4 \n\n");
+    affiche_pleine(pleine);                  // Affichage du résultat
+    printf("Conversion de la matrice pleine en creuse\n\n");
+    creuse_vers_pleine(pleine2,creuse);
+    affiche_pleine(pleine);                  // Affichage de la conversion de la matrice pleine pour validation
+    liberer_creuse(creuse);                  // Libération de la matrice creuse
 //pleine
+    printf("\n\n Nouvelle Matrice \n\n");
+    // Test avec la matrice pleine de 1
     init_pleine_constante(pleine,1);
-    affiche_pleine(pleine);
-    creuse = init_creuse();
-    pleine_vers_creuse(pleine, creuse);
-    affiche_creuse(creuse);
-    creuse_vers_pleine(pleine,creuse);
-    affiche_pleine(pleine);
-    liberer_creuse(creuse);
-
-    return 0;
+    printf("Matrice pleine \n\n");         
+    affiche_pleine(pleine);                  // Affichage de la matrice pleine 
+    creuse = init_creuse();                  // Initialisation de la matrice creuse
+    pleine_vers_creuse(pleine, creuse);      // Conversion vers creuse
+    printf("Conversion de la matrice pleine en creuse \n\n");
+    affiche_creuse(creuse);                  // Affichage du résultat
+    mult_creuse(creuse, 6);                  // Multiplication de la matrice creuse
+    printf("Multiplication de la matrice creuse par 6 \n\n");
+    affiche_creuse(creuse);                  // Affichage du résultat
+    mult_pleine(pleine,6);                     // Multiplication de la matrice pleine
+    printf("Multiplication de la matrice pleine par 6 \n\n");
+    affiche_pleine(pleine);                  // Affichage du résultat
+    printf("Conversion de la matrice pleine en creuse \n\n");
+    creuse_vers_pleine(pleine2,creuse);
+    affiche_pleine(pleine);                  // Affichage de la conversion de la matrice pleine pour validation
+    liberer_creuse(creuse);                  // Libération de la matrice creuse 
+   return 0;
 }
 
